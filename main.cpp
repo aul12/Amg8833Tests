@@ -29,18 +29,18 @@ int main() {
     assert(setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) >= 0);
 
     sockaddr_in clientAddr{};
-    socklen_t clientLen;
+    socklen_t clientLen = 0;
 
     cv::namedWindow("imgOriginal", cv::WINDOW_NORMAL);
     cv::namedWindow("background", cv::WINDOW_NORMAL);
     cv::namedWindow("foreground", cv::WINDOW_NORMAL);
     cv::namedWindow("foregroundBin", cv::WINDOW_NORMAL);
 
-    constexpr auto medianLength = 65;
+    constexpr auto medianLength = 31;
     std::array<std::array<std::deque<uint8_t>, 8>, 8> temporalMedianFilterList;
 
     while (true) {
-        char buf[64];
+        char buf[64] = {0};
         ssize_t read = recvfrom(sockfd, buf, sizeof(buf), 0, (sockaddr*)&clientAddr, &clientLen);
         assert(read == 64);
         std::cout << "New frame" << std::endl;
@@ -66,7 +66,8 @@ int main() {
         cv::resize(foreground, foreground, cv::Size(128,128),0,0,CV_INTER_LANCZOS4);
         cv::resize(background, background, cv::Size(128,128),0,0,CV_INTER_LANCZOS4);
         cv::Mat foregroundBin(foreground.size(), CV_8UC1);
-        cv::threshold(foreground, foregroundBin, 0, 255, CV_THRESH_OTSU);
+        cv::threshold(foreground, foregroundBin, 10, 255, CV_THRESH_TOZERO);
+        cv::equalizeHist(foregroundBin, foregroundBin);
 
         cv::imshow("imgOriginal", imgOriginal);
         cv::imshow("foreground", foreground);
